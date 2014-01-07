@@ -35,7 +35,7 @@ module.exports = (grunt) ->
 	grunt.loadNpmTasks('grunt-contrib-watch')
 	grunt.loadNpmTasks('grunt-notify')
 
-	#// Default task(s).
+
 	grunt.registerTask 'dev', [
 		'build'
 		'connect'

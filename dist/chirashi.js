@@ -1,7 +1,14 @@
 (function() {
+  var imageLoaded,
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
+  imageLoaded = function(img) {
+    return img.complete && !((img.naturalWidth != null) && img.naturalWidth === 0);
+  };
+
   window.Chirashi = (function() {
     function Chirashi(containerSelector, opts) {
-      var _base, _base1, _base2, _base3, _base4, _base5, _base6;
+      var _base, _base1, _base2, _base3, _base4, _base5, _base6, _base7;
       this.opts = opts;
       if ((_base = this.opts).itemSelector == null) {
         _base.itemSelector = '.item';
@@ -21,67 +28,134 @@
       if ((_base5 = this.opts).fadeInDelay == null) {
         _base5.fadeInDelay = 750;
       }
-      if ((_base6 = this.opts).usePercentages == null) {
-        _base6.usePercentages = true;
+      if ((_base6 = this.opts).fadeSpeed == null) {
+        _base6.fadeSpeed = 300;
       }
-      this.container = $(containerSelector);
-      this.items = this.container.find(this.opts.itemSelector);
+      if ((_base7 = this.opts).usePercentages == null) {
+        _base7.usePercentages = true;
+      }
+      this.$container = $(containerSelector);
+      this._reset();
+      this.update();
+    }
+
+    Chirashi.prototype._reset = function() {
+      this.$items = $();
       this._boxes = [];
       this._overlaps = [];
       this._fadeInterval = null;
-      this._initialize();
-    }
+      return this.$allItems().css({
+        position: 'absolute',
+        display: 'none'
+      });
+    };
 
-    Chirashi.prototype._initialize = function() {
-      var _this = this;
-      return this.items.each(function(i, el) {
-        var queue;
-        $(el).hide();
-        $(el).on('mouseover', function(e) {
-          clearInterval(_this._fadeInterval);
-          return _this.items.each(function(j, el) {
-            if (i !== j) {
-              $(el).addClass('faded');
-              return $(el).removeClass('focused');
-            } else {
-              $(el).removeClass('faded');
-              return $(el).addClass('focused');
-            }
-          });
-        });
-        $(el).on('mouseout', function(e) {
-          clearInterval(_this._fadeInterval);
-          return _this._fadeInterval = setTimeout(function() {
-            return _this.items.removeClass('faded focused');
-          }, _this.opts.fadeInDelay);
-        });
-        queue = async.queue(function(item, done) {
-          var box, left, size;
-          size = {
-            w: item.width(),
-            h: item.height()
-          };
-          box = _this._newBox(size, _this._boxes);
-          if (box != null) {
-            _this._boxes.push(box);
-            if (_this.opts.usePercentages) {
-              left = (100 * box.x / $(window).width()) + "%";
-            } else {
-              left = box.x;
-            }
-            $(el).css({
-              position: 'absolute',
-              left: left,
-              top: box.y
-            });
-            $(el).fadeIn();
-            return done();
+    Chirashi.prototype.$allItems = function() {
+      return this.$container.find(this.opts.itemSelector);
+    };
+
+    Chirashi.prototype.clear = function() {};
+
+    Chirashi.prototype.update = function() {
+      var currentItems, item, itemsToAdd, itemsToRemove, previousItems, _i, _len, _results;
+      previousItems = this.$items;
+      currentItems = this.$allItems();
+      itemsToAdd = currentItems.filter(function(i) {
+        return !(__indexOf.call(previousItems, this) >= 0);
+      });
+      itemsToRemove = previousItems.filter(function(i) {
+        return !(__indexOf.call(currentItems, this) >= 0);
+      });
+      this._addItems(itemsToAdd);
+      _results = [];
+      for (_i = 0, _len = itemsToRemove.length; _i < _len; _i++) {
+        item = itemsToRemove[_i];
+        _results.push("TODO");
+      }
+      return _results;
+    };
+
+    Chirashi.prototype.destroy = function() {
+      this.$allItems().off('mouseover mouseout');
+      clearInterval(this._fadeInterval);
+      return this._reset();
+    };
+
+    Chirashi.prototype._addItems = function($newItems) {
+      var addOneItem,
+        _this = this;
+      addOneItem = function(item, done) {
+        var $item, box, left, size;
+        $item = $(item);
+        size = {
+          w: $item.outerWidth(),
+          h: $item.outerHeight()
+        };
+        box = _this._newBox(size, _this._boxes);
+        if (box != null) {
+          _this._boxes.push(box);
+          if (_this.opts.usePercentages) {
+            left = (100 * box.x / $(window).width()) + "%";
           } else {
+            left = box.x;
+          }
+          if ($item.css('left') == null) {
+            $item.css({
+              left: $(window).width() / 2,
+              top: $(window).height() / 2
+            });
+          }
+          $item.animate({
+            left: left,
+            top: box.y
+          });
+          $item.fadeIn(_this.opts.fadeSpeed);
+          $item.removeClass('hidden');
+          $item.on('mouseover', function(e) {
+            clearInterval(_this._fadeInterval);
+            return _this.$items.each(function(j, el2) {
+              if (item !== el2) {
+                return $(el2).stop().animate({
+                  opacity: 0.5
+                });
+              } else {
+                return $(el2).stop().animate({
+                  opacity: 1
+                });
+              }
+            });
+          });
+          $item.on('mouseout', function(e) {
+            clearInterval(_this._fadeInterval);
+            return _this._fadeInterval = setTimeout(function() {
+              _this.$items.removeClass('faded focused');
+              return _this.$items.animate({
+                opacity: 1
+              });
+            }, _this.opts.fadeInDelay);
+          });
+          _this.$items.push(item);
+          if (typeof done === 'function') {
+            return done();
+          }
+        } else {
+          if (typeof done === 'function') {
             return done("the box didn't get added because maxIterations was reached");
           }
-        }, 1);
-        return $(el).find('img').load(function() {
-          return queue.push($(el), function(err) {});
+        }
+      };
+      return $newItems.each(function(i, el) {
+        var queue;
+        $(el).addClass('hidden');
+        queue = async.queue(addOneItem, 1);
+        return $(el).find('img').each(function(i, img) {
+          if (imageLoaded(img)) {
+            return queue.push(el, function(err) {});
+          } else {
+            return img.onload = function() {
+              return queue.push(el, function(err) {});
+            };
+          }
         });
       });
     };
@@ -103,54 +177,45 @@
         newbox.x = x;
         newbox.y = y;
         iterations += 1;
-        console.log('iter: ', iterations);
       }
       this._overlaps[newbox.id] = 0;
       if (iterations <= this.opts.maxIterations) {
         return newbox;
       } else {
-        console.debug('too many iterations ! ! !');
         return null;
       }
     };
 
     Chirashi.prototype._checkFit = function(newbox, boxes) {
-      var box, good, id, newOverlaps, ox, oy, _i, _j, _len, _len1, _ref;
-      good = true;
+      var box, id, newOverlaps, ox, oy, totalOverlaps, _i, _j, _len, _len1, _ref;
       newOverlaps = [];
-      console.debug('----------', newbox.id);
       for (_i = 0, _len = boxes.length; _i < _len; _i++) {
         box = boxes[_i];
         _ref = this._boxOverlap(box, newbox), ox = _ref.ox, oy = _ref.oy;
         console.assert(!(isNaN(ox) || isNaN(oy)));
         if (ox > this.opts.maxLinearOverlap && oy > this.opts.maxLinearOverlap) {
-          good = false;
+          return false;
         } else if (ox * oy > this.opts.maxArealOverlap) {
-          good = false;
+          return false;
         } else if (ox > 0 && oy > 0) {
           if (this._overlaps[box.id] >= this.opts.maxOverlaps) {
-            console.debug('too many overlaps on box:', box.id);
-            good = false;
+            return false;
           } else {
             newOverlaps.push(box.id);
           }
         }
       }
-      if (!good) {
+      totalOverlaps = _.reduce(this._overlaps, function(sum, num) {
+        return sum + num;
+      });
+      if (totalOverlaps + newOverlaps.length > this.$items.length * this.opts.maxOverlaps) {
         return false;
-      }
-      console.debug('newOverlaps:', newOverlaps);
-      if (newOverlaps.length > this.opts.maxOverlaps) {
-        console.debug('too many new overlaps');
-        good = false;
       }
       for (_j = 0, _len1 = newOverlaps.length; _j < _len1; _j++) {
         id = newOverlaps[_j];
-        console.debug('idn', id);
         this._overlaps[id] += 1;
       }
-      console.debug('@_overlaps', this._overlaps);
-      return good;
+      return true;
     };
 
     Chirashi.prototype._overlap1D = function(ax1, ax2, bx1, bx2) {
@@ -177,8 +242,8 @@
 
     Chirashi.prototype._randomPosition = function(size) {
       return {
-        x: Math.floor(Math.random() * (this.container.width() - size.w)),
-        y: Math.floor(Math.random() * (this.container.height() - size.h))
+        x: Math.floor(Math.random() * (this.$container.width() - size.w)),
+        y: Math.floor(Math.random() * (this.$container.height() - size.h))
       };
     };
 
