@@ -18,7 +18,7 @@ module.exports = (grunt) ->
 
 		watch:
 			coffee:
-				files: ["<%= config.src %>/coffee/*.coffee"]
+				files: ["<%= config.src %>/*.coffee"]
 				tasks: ['coffee']
 
 		coffee:
@@ -27,7 +27,7 @@ module.exports = (grunt) ->
 			compile:
 				files:
 					"<%= config.dist %>/chirashi.js": [
-						"<%= config.src %>/coffee/chirashi.coffee",
+						"<%= config.src %>/chirashi.coffee",
 					]
 
 	grunt.loadNpmTasks('grunt-contrib-coffee')
