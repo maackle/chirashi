@@ -1,0 +1,27 @@
+{
+  "name": "chirashi",
+  "version": "0.0.0",
+  "homepage": "https://github.com/maackle/chirashi",
+  "authors": [
+    "Michael Dougherty <maackle.d@gmail.com>"
+  ],
+  "main": "dist/chirashi.js",
+  "keywords": [
+    "jQuery",
+    "image",
+    "gallery",
+    "scattered",
+    "responsive"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.0.3"
+  }
+}
